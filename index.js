@@ -44,27 +44,26 @@ module.exports = bundler => {
 
 		glob.sync(`${bundler.options.outDir}/**/*.html`).forEach(file => {
 			const htmlPath = path.resolve(file);
-			const html = fs.readFileSync(htmlPath).toString();
+			let html = fs.readFileSync(htmlPath).toString();
 			const ogUrlTag = getOpengraphTag(html, 'og:url');
 
 			if (ogUrlTag) {
 				const ogImageTag = getOpengraphTag(html, 'og:image');
 				if (ogImageTag) {
-					const ogImageContent = getMetaTagContent(ogImageTag);
-					const absoluteOgImageUrl = url.resolve(getMetaTagContent(ogUrlTag), ogImageContent);
-					const ogImageTagAbsoluteUrl = ogImageTag.replace(ogImageContent, absoluteOgImageUrl);
-
-					fs.writeFileSync(htmlPath, html.replace(ogImageTag, ogImageTagAbsoluteUrl));
+					const metaImageContent = getMetaTagContent(ogImageTag);
+					const absoluteOgImageUrl = url.resolve(getMetaTagContent(ogUrlTag), metaImageContent);
+					const ogImageTagAbsoluteUrl = ogImageTag.replace(metaImageContent, absoluteOgImageUrl);
+					html = html.replace(ogImageTag, ogImageTagAbsoluteUrl);
 				}
 
 				const twitterImageTag = getTwitterCardTag(html, 'twitter:image');
 				if (twitterImageTag) {
-					const ogImageContent = getMetaTagContent(twitterImageTag);
-					const absoluteTwitterImageUrl = url.resolve(getMetaTagContent(ogUrlTag), ogImageContent);
-					const twitterImageTagAbsoluteUrl = twitterImageTag.replace(ogImageContent, absoluteTwitterImageUrl);
-
-					fs.writeFileSync(htmlPath, html.replace(twitterImageTag, twitterImageTagAbsoluteUrl));
+					const metaImageContent = getMetaTagContent(twitterImageTag);
+					const absoluteTwitterImageUrl = url.resolve(getMetaTagContent(ogUrlTag), metaImageContent);
+					const twitterImageTagAbsoluteUrl = twitterImageTag.replace(metaImageContent, absoluteTwitterImageUrl);
+					html = html.replace(twitterImageTag, twitterImageTagAbsoluteUrl);
 				}
+				fs.writeFileSync(htmlPath, html);
 			}
 		});
 
