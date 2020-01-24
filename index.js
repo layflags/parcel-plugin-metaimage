@@ -6,7 +6,16 @@ const chalk = require('chalk');
 const prettyMs = require('pretty-ms');
 const glob = require('glob');
 
-const getMetaTag = (html, property) => {
+const getMetaTagContent = metaTagHtml => {
+	const regex = /content=["]([^"]*)["]/i;
+	const regexExec = regex.exec(metaTagHtml);
+	if (regexExec) {
+		return regexExec[1];
+	}
+	return false;
+};
+
+const getOpengraphTag = (html, property) => {
 	const regex = new RegExp(`<meta[^>]*property=["|']${property}["|'][^>]*>`, 'i');
 	const regexExec = regex.exec(html);
 	if (regexExec) {
@@ -15,11 +24,11 @@ const getMetaTag = (html, property) => {
 	return false;
 };
 
-const getMetaTagContent = metaTagHtml => {
-	const regex = /content=["]([^"]*)["]/i;
-	const regexExec = regex.exec(metaTagHtml);
+const getTwitterCardTag = (html, name) => {
+	const regex = new RegExp(`<meta[^>]*name=["|']${name}["|'][^>]*>`, 'i');
+	const regexExec = regex.exec(html);
 	if (regexExec) {
-		return regexExec[1];
+		return regexExec[0];
 	}
 	return false;
 };
@@ -30,35 +39,31 @@ module.exports = bundler => {
 			return;
 		}
 		console.log('');
-		const spinner = ora(chalk.grey('Fixing og:image link')).start();
+		const spinner = ora(chalk.grey('Fixing image meta link')).start();
 		const start = Date.now();
 
 		glob.sync(`${bundler.options.outDir}/**/*.html`).forEach(file => {
 			const htmlPath = path.resolve(file);
 			const html = fs.readFileSync(htmlPath).toString();
-			const twitterImageTag = getMetaTag(html, 'twitter:image');
-			const ogImageTag = getMetaTag(html, 'og:image');
-			const ogUrlTag = getMetaTag(html, 'og:url');
+			const ogUrlTag = getOpengraphTag(html, 'og:url');
 
 			if (ogUrlTag) {
+				const ogImageTag = getOpengraphTag(html, 'og:image');
 				if (ogImageTag) {
 					const ogImageContent = getMetaTagContent(ogImageTag);
-					const ogUrlContent = getMetaTagContent(ogUrlTag);
-					const absoluteOgImageUrl = url.resolve(ogUrlContent, ogImageContent);
+					const absoluteOgImageUrl = url.resolve(getMetaTagContent(ogUrlTag), ogImageContent);
 					const ogImageTagAbsoluteUrl = ogImageTag.replace(ogImageContent, absoluteOgImageUrl);
-					const patchedHtml = html.replace(ogImageTag, ogImageTagAbsoluteUrl);
 
-					fs.writeFileSync(htmlPath, patchedHtml);
+					fs.writeFileSync(htmlPath, html.replace(ogImageTag, ogImageTagAbsoluteUrl));
 				}
 
+				const twitterImageTag = getTwitterCardTag(html, 'twitter:image');
 				if (twitterImageTag) {
 					const ogImageContent = getMetaTagContent(twitterImageTag);
-					const ogUrlContent = getMetaTagContent(ogUrlTag);
-					const absoluteTwitterImageUrl = url.resolve(ogUrlContent, ogImageContent);
+					const absoluteTwitterImageUrl = url.resolve(getMetaTagContent(ogUrlTag), ogImageContent);
 					const twitterImageTagAbsoluteUrl = twitterImageTag.replace(ogImageContent, absoluteTwitterImageUrl);
-					const patchedHtml = html.replace(twitterImageTag, twitterImageTagAbsoluteUrl);
 
-					fs.writeFileSync(htmlPath, patchedHtml);
+					fs.writeFileSync(htmlPath, html.replace(twitterImageTag, twitterImageTagAbsoluteUrl));
 				}
 			}
 		});
