@@ -1,7 +1,7 @@
 {
   "name": "parcel-plugin-metaimage",
-  "version": "1.2.2",
-  "description": "Set absolute URL for og:image and twitter:image meta tags.",
+  "version": "1.2.3",
+  "description": "Set absolute url for og:image and twitter:image meta tags.",
   "main": "index.js",
   "engines": {
     "node": ">=8"
