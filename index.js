@@ -35,10 +35,6 @@ const getTwitterCardTag = (html, name) => {
 
 module.exports = bundler => {
 	bundler.on('buildEnd', async () => {
-		if (process.env.NODE_ENV !== 'production') {
-			return;
-		}
-		console.log('');
 		const spinner = ora(chalk.grey('Fixing image meta link')).start();
 		const start = Date.now();
 
