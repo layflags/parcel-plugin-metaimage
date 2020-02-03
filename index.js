@@ -1,8 +1,6 @@
 const fs = require('fs');
 const path = require('path');
 const url = require('url');
-const ora = require('ora');
-const chalk = require('chalk');
 const prettyMs = require('pretty-ms');
 const glob = require('glob');
 
@@ -35,7 +33,6 @@ const getTwitterCardTag = (html, name) => {
 
 module.exports = bundler => {
 	bundler.on('buildEnd', async () => {
-		const spinner = ora(chalk.grey('Fixing image meta link')).start();
 		const start = Date.now();
 
 		glob.sync(`${bundler.options.outDir}/**/*.html`).forEach(file => {
@@ -63,10 +60,6 @@ module.exports = bundler => {
 			}
 		});
 
-		const end = Date.now();
-		spinner.stopAndPersist({
-			symbol: '✨ ',
-			text: chalk.green(`Fixed og:image and twitter:image links in ${prettyMs(end - start)}.`)
-		});
+		console.info(`Fixed social images links in ${prettyMs(Date.now() - start)}.`)
 	});
 };
