@@ -1,9 +1,23 @@
 const fs = require('fs');
 const path = require('path');
 const url = require('url');
-const prettyMs = require('pretty-ms');
 const glob = require('glob');
 
+/*
+ * Extract a meta from a given html string
+ */
+const findMeta = (html, propertyName, propertyValue) => {
+	const regex = new RegExp(`<meta[^>]*${propertyName}=["|']${propertyValue}["|'][^>]*>`, 'i');
+	const regexExec = regex.exec(html);
+	if (regexExec) {
+		return regexExec[0];
+	}
+	return false;
+};
+
+/*
+ * Extract the content of a given meta html
+ */
 const getMetaTagContent = metaTagHtml => {
 	const regex = /content=["]([^"]*)["]/i;
 	const regexExec = regex.exec(metaTagHtml);
@@ -13,53 +27,56 @@ const getMetaTagContent = metaTagHtml => {
 	return false;
 };
 
-const getOpengraphTag = (html, property) => {
-	const regex = new RegExp(`<meta[^>]*property=["|']${property}["|'][^>]*>`, 'i');
-	const regexExec = regex.exec(html);
-	if (regexExec) {
-		return regexExec[0];
-	}
-	return false;
-};
-
-const getTwitterCardTag = (html, name) => {
-	const regex = new RegExp(`<meta[^>]*name=["|']${name}["|'][^>]*>`, 'i');
-	const regexExec = regex.exec(html);
-	if (regexExec) {
-		return regexExec[0];
-	}
-	return false;
+/*
+ * Change the url of a meta by prepending the given baseUrl
+ */
+const patchMetaToAbsolute = (metaHTML, baseUrl) => {
+	const metaContent = getMetaTagContent(metaHTML);
+	return metaHTML.replace(
+		metaContent,
+		url.resolve(baseUrl, metaContent) // Relative url to absolute url
+	);
 };
 
 module.exports = bundler => {
 	bundler.on('buildEnd', async () => {
-		const start = Date.now();
-
 		glob.sync(`${bundler.options.outDir}/**/*.html`).forEach(file => {
 			const htmlPath = path.resolve(file);
 			let html = fs.readFileSync(htmlPath).toString();
-			const ogUrlTag = getOpengraphTag(html, 'og:url');
+			const ogUrlTag = findMeta(html, 'property', 'og:url');
 
-			if (ogUrlTag) {
-				const ogImageTag = getOpengraphTag(html, 'og:image');
-				if (ogImageTag) {
-					const metaImageContent = getMetaTagContent(ogImageTag);
-					const absoluteOgImageUrl = url.resolve(getMetaTagContent(ogUrlTag), metaImageContent);
-					const ogImageTagAbsoluteUrl = ogImageTag.replace(metaImageContent, absoluteOgImageUrl);
-					html = html.replace(ogImageTag, ogImageTagAbsoluteUrl);
-				}
-
-				const twitterImageTag = getTwitterCardTag(html, 'twitter:image');
-				if (twitterImageTag) {
-					const metaImageContent = getMetaTagContent(twitterImageTag);
-					const absoluteTwitterImageUrl = url.resolve(getMetaTagContent(ogUrlTag), metaImageContent);
-					const twitterImageTagAbsoluteUrl = twitterImageTag.replace(metaImageContent, absoluteTwitterImageUrl);
-					html = html.replace(twitterImageTag, twitterImageTagAbsoluteUrl);
-				}
-				fs.writeFileSync(htmlPath, html);
+			// Abort if no Opengraph url meta detected
+			if (!ogUrlTag) {
+				return;
 			}
+
+			// Get the base url from Opengraph meta
+			const ogUrl = getMetaTagContent(ogUrlTag);
+
+			// Fetch original meta
+			const opengraphImageMeta = findMeta(html, 'property', 'og:image');
+			const twitterImageMeta = findMeta(html, 'name', 'twitter:image');
+
+			// Process Opengraph meta
+			if (opengraphImageMeta) {
+				html = html.replace(
+					opengraphImageMeta,
+					patchMetaToAbsolute(opengraphImageMeta, ogUrl)
+				);
+			}
+
+			// Process Twitter meta
+			if (twitterImageMeta) {
+				html = html.replace(
+					twitterImageMeta,
+					patchMetaToAbsolute(twitterImageMeta, ogUrl)
+				);
+			}
+
+			// We write the modified html file at the end
+			fs.writeFileSync(htmlPath, html);
 		});
 
-		console.info(`Fixed social images links in ${prettyMs(Date.now() - start)}.`)
+		console.info('Fixed Opengraph and Twitter images meta tag');
 	});
 };
