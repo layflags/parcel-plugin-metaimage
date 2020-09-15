@@ -1,5 +1,6 @@
 node_modules
 .nyc_output
+.idea
 npm-debug.log
 package-lock.json
 yarn.lock
