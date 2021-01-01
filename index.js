@@ -6,13 +6,9 @@ const glob = require('glob');
 /*
  * Extract a meta from a given html string
  */
-const findMeta = (html, propertyName, propertyValue) => {
-	const regex = new RegExp(`<meta[^>]*${propertyName}=["|']${propertyValue}["|'][^>]*>`, 'i');
-	const regexExec = regex.exec(html);
-	if (regexExec) {
-		return regexExec[0];
-	}
-	return false;
+const findMetas = (html, propertyName, propertyValue) => {
+	const regex = new RegExp(`<meta[^>]*${propertyName}=["|']${propertyValue}["|'][^>]*>`, 'ig');
+	return html.match(regex) || [];
 };
 
 /*
@@ -43,40 +39,41 @@ module.exports = bundler => {
 		glob.sync(`${bundler.options.outDir}/**/*.html`).forEach(file => {
 			const htmlPath = path.resolve(file);
 			let html = fs.readFileSync(htmlPath).toString();
-			const ogUrlTag = findMeta(html, 'property', 'og:url');
+			const ogUrlTag = findMetas(html, 'property', 'og:url')[0];
+			const originTag = findMetas(html, 'property', 'origin')[0];
 
-			// Abort if no Opengraph url meta detected
-			if (!ogUrlTag) {
+			// Abort if no Opengraph url and origin meta detected
+			if (!ogUrlTag && !originTag) {
 				return;
 			}
 
 			// Get the base url from Opengraph meta
-			const ogUrl = getMetaTagContent(ogUrlTag);
+			const ogUrl = getMetaTagContent(ogUrlTag || originTag);
 
 			// Fetch original meta
-			const opengraphImageMeta = findMeta(html, 'property', 'og:image');
-			const twitterImageMeta = findMeta(html, 'name', 'twitter:image');
+			const opengraphImageMetas = findMetas(html, 'property', 'og:image');
+			const twitterImageMetas = findMetas(html, 'name', 'twitter:image');
 
 			// Process Opengraph meta
-			if (opengraphImageMeta) {
+			opengraphImageMetas.forEach((meta) => {
 				html = html.replace(
-					opengraphImageMeta,
-					patchMetaToAbsolute(opengraphImageMeta, ogUrl)
+					meta,
+					patchMetaToAbsolute(meta, ogUrl)
 				);
-			}
+			});
 
 			// Process Twitter meta
-			if (twitterImageMeta) {
+			twitterImageMetas.forEach((meta) => {
 				html = html.replace(
-					twitterImageMeta,
-					patchMetaToAbsolute(twitterImageMeta, ogUrl)
+					meta,
+					patchMetaToAbsolute(meta, ogUrl)
 				);
-			}
+			});
 
 			// We write the modified html file at the end
 			fs.writeFileSync(htmlPath, html);
 		});
 
-		console.info('Fixed Opengraph and Twitter images meta tag');
+		console.info('Fixed Opengraph and Twitter images meta tag!');
 	});
 };

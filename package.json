@@ -1,6 +1,6 @@
 {
-  "name": "parcel-plugin-metaimage",
-  "version": "1.2.4",
+  "name": "@layflags/parcel-plugin-metaimage",
+  "version": "1.2.5",
   "description": "Set absolute url for og:image and twitter:image meta tags.",
   "main": "index.js",
   "engines": {
@@ -11,7 +11,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Eliepse/parcel-plugin-metaimage.git"
+    "url": "git+https://github.com/layflags/parcel-plugin-metaimage.git"
   },
   "keywords": [
     "parcel",
@@ -23,12 +23,12 @@
     "open graph",
     "image"
   ],
-  "author": "Eliepse <contact@eliepse.fr>",
+  "author": "Lay Flags <code@layfla.gs>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/Eliepse/parcel-plugin-metaimage/issues"
+    "url": "https://github.com/layflags/parcel-plugin-metaimage/issues"
   },
-  "homepage": "https://github.com/Eliepse/parcel-plugin-metaimage#readme",
+  "homepage": "https://github.com/layflags/parcel-plugin-metaimage#readme",
   "devDependencies": {
     "xo": "^0.23.0"
   },
